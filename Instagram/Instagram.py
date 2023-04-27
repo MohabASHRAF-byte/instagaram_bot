@@ -11,14 +11,14 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 import random as rand
 import time
-from bs4 import BeautifulSoup
-import requests
+# from bs4 import BeautifulSoup
+# import requests
 import urllib.request
 
 
 class Instagram(webdriver.Chrome):
     def __init__(self, driver_path=chrome_path):
-        self.links = ()
+        self.links = []
         self.driver_path = driver_path
         os.environ['PATH'] += self.driver_path
         super(Instagram, self).__init__()
@@ -204,21 +204,6 @@ class Instagram(webdriver.Chrome):
         except:
             print("close not found")
 
-    def download_img(self):
-
-        tmp = self.find_elements(
-            By.CSS_SELECTOR, 'ul[class="_acay"]'
-        )
-        print('tmep', len(tmp))
-        for i in tmp:
-            try:
-                num = i.find_elements(
-                    By.CSS_SELECTOR, 'img[alt*="Photo by @_mohab_ashraf_0"]'
-                )
-                print(len(num))
-            except:
-                print(-1)
-
     def do_work(self, like: int, comment: bool, prev: bool):
         if not prev:
             self.close_img()
@@ -230,14 +215,14 @@ class Instagram(webdriver.Chrome):
         sleep(2)
         return self.do_work(like=like, comment=comment, prev=self.get_next())
 
-    def next_photo(self):
-        sleep(2)
-        print("here")
+    def next_photo(self, element):
+        sleep(5)
         try:
-            nxt = self.find_element(
+            nxt = element.find_elements(
                 By.CSS_SELECTOR, 'button[aria-label="Next"]'
             )
-            nxt.click()
+            print(len(nxt))
+            nxt[0].click()
             return True
         except:
             print("failed")
@@ -251,32 +236,47 @@ class Instagram(webdriver.Chrome):
         )
         print(len(is_multiple))
         if len(is_multiple) == 1:
-            print("empty")
-        # img = is_multiple[0].find_element(
-        #     By.TAG_NAME, 'img'
-        # )
-        # img_url = img.get_attribute('src')
-        # file_name = f"image{self.cnt}.jpeg"
-        # self.cnt += 1
-        # urllib.request.urlretrieve(img_url, file_name)
-        # print("Image downloaded successfully as:", file_name)
+            img = is_multiple[0].find_element(
+                By.TAG_NAME, 'img'
+            )
+            img_url = img.get_attribute('src')
+            file_name = f"image{self.cnt}.jpeg"
+            self.cnt += 1
+            urllib.request.urlretrieve(img_url, file_name)
+            print("Image downloaded successfully as:", file_name)
+            print("src : ", img.get_attribute('src'))
+            # self.links.append(img.get_attribute('src'))
+
         else:
             try:
                 while True:
                     # while next page
-                    all_img = self.find_element(
+                    find_box = self.find_element(
                         By.CLASS_NAME, '_aatk'
-                    ).find_element(
+                    )
+                    print("here0")
+                    find_the_list = find_box.find_element(
                         By.TAG_NAME, 'ul'
-                    ).find_elements(
+                    )
+                    print("here1")
+                    find_list_elements = find_the_list.find_elements(
                         By.TAG_NAME, 'img'
                     )
-                    for img in all_img:
-                        self.links.add(img.get_attribute('src'))
-                        print("here")
-                    if not self.next_photo():
+                    print("here2")
+                    for img in find_list_elements:
+                        print("src : ", img.get_attribute('src'))
+                        self.links.append(img.get_attribute('src'))
+                        print("int the loop\n\n")
+                    if not self.next_photo(element=find_box):
                         break
-                    sleep(2)
+                    sleep(5)
+                    print(len(self.links))
             except:
                 print("out")
-            print(len(self.links))
+
+    def process_download(self):
+        for link in set(self.links):
+            file_name = f"image{self.cnt}.jpeg"
+            self.cnt += 1
+            urllib.request.urlretrieve(link, file_name)
+            print("Image downloaded successfully as:", file_name)

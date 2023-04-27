@@ -1,5 +1,7 @@
 BASE_URL = "https://www.instagram.com/"
-chrome_path = r"F:/Python/selenuim/drivers"
+chrome_path = r"Downloads/chromedriver_linux64/"
+
+
 comments = [
     'comment one from bot 1',
     'comment one from bot 2',
