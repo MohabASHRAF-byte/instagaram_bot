@@ -1,28 +1,25 @@
 from Instagram.Constraints import *
+from Instagram.download_post import DownloadPost
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
 from time import sleep
 from selenium import webdriver
 import os
-import selenium
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 import random as rand
 import time
-# from bs4 import BeautifulSoup
-# import requests
-import urllib.request
 
 
 class Instagram(webdriver.Chrome):
     def __init__(self, driver_path=chrome_path):
+        self.target = None
         self.links = []
         self.driver_path = driver_path
         os.environ['PATH'] += self.driver_path
         super(Instagram, self).__init__()
-        self.implicitly_wait(15)
+        # self.implicitly_wait(15)
         self.cnt = 1
         self.maximize_window()
         self.start_time = time.time()
@@ -77,17 +74,18 @@ class Instagram(webdriver.Chrome):
             self.login_with_facebook(user=user, pas=password)
 
     def move_to_profile(self, target):
+        self.target = target
         try:
             save_data_btn = WebDriverWait(self, 3).until(
-                EC.text_to_be_present_in_element((By.CLASS_NAME, 'yWX7d'), "Not Now")
+                EC.text_to_be_present_in_element((By.CLASS_NAME, '_a9_1'), "Not Now")
             )
             save_data_btn.click()
         except Exception as e:
             print("not now didn't appear")
+            WebDriverWait(self, 180).until(
+                EC.text_to_be_present_in_element((By.CSS_SELECTOR, 'button[type="button"]'), "Save Info")
+            )
 
-        WebDriverWait(self, 180).until(
-            EC.text_to_be_present_in_element((By.CSS_SELECTOR, 'button[type="button"]'), "Save Info")
-        )
         search_btn = self.find_element(
             By.CSS_SELECTOR, 'svg[aria-label="Search"]'
         )
@@ -188,10 +186,14 @@ class Instagram(webdriver.Chrome):
         else:
             pass
 
-    def get_next(self):
+    def next_post(self):
         try:
-            tmp1 = self.find_element(By.CSS_SELECTOR, 'svg[aria-label="Next"]')
-            tmp1.click()
+            nxt = WebDriverWait(self, 0).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, 'svg[aria-label="Next"]')
+                )
+            )
+            nxt.click()
         except:
             return False
         return True
@@ -205,78 +207,16 @@ class Instagram(webdriver.Chrome):
             print("close not found")
 
     def do_work(self, like: int, comment: bool, prev: bool):
-        if not prev:
-            self.close_img()
-            return
-        sleep(2)
-        self.download()
-        self.add_comment(choice=comment)
-        self.handle_like(choice=like)
-        sleep(2)
-        return self.do_work(like=like, comment=comment, prev=self.get_next())
-
-    def next_photo(self, element):
-        sleep(5)
-        try:
-            nxt = element.find_elements(
-                By.CSS_SELECTOR, 'button[aria-label="Next"]'
-            )
-            print(len(nxt))
-            nxt[0].click()
-            return True
-        except:
-            print("failed")
-            return False
-
-    def download(self):
-        is_multiple = self.find_element(
-            By.CLASS_NAME, '_aatk'
-        ).find_elements(
-            By.CSS_SELECTOR, 'div[role="button"]'
-        )
-        print(len(is_multiple))
-        if len(is_multiple) == 1:
-            img = is_multiple[0].find_element(
-                By.TAG_NAME, 'img'
-            )
-            img_url = img.get_attribute('src')
-            file_name = f"image{self.cnt}.jpeg"
-            self.cnt += 1
-            urllib.request.urlretrieve(img_url, file_name)
-            print("Image downloaded successfully as:", file_name)
-            print("src : ", img.get_attribute('src'))
-            # self.links.append(img.get_attribute('src'))
-
-        else:
-            try:
-                while True:
-                    # while next page
-                    find_box = self.find_element(
-                        By.CLASS_NAME, '_aatk'
-                    )
-                    print("here0")
-                    find_the_list = find_box.find_element(
-                        By.TAG_NAME, 'ul'
-                    )
-                    print("here1")
-                    find_list_elements = find_the_list.find_elements(
-                        By.TAG_NAME, 'img'
-                    )
-                    print("here2")
-                    for img in find_list_elements:
-                        print("src : ", img.get_attribute('src'))
-                        self.links.append(img.get_attribute('src'))
-                        print("int the loop\n\n")
-                    if not self.next_photo(element=find_box):
-                        break
-                    sleep(5)
-                    print(len(self.links))
-            except:
-                print("out")
-
-    def process_download(self):
-        for link in set(self.links):
-            file_name = f"image{self.cnt}.jpeg"
-            self.cnt += 1
-            urllib.request.urlretrieve(link, file_name)
-            print("Image downloaded successfully as:", file_name)
+       try:
+           if not prev:
+               self.close_img()
+               return
+           sleep(2)
+           download_post = DownloadPost(driver=self, cnt=self.cnt, target=self.target)
+           self.cnt = download_post.execute_process()
+           self.add_comment(choice=comment)
+           self.handle_like(choice=like)
+           sleep(1)
+           return self.do_work(like=like, comment=comment, prev=self.next_post())
+       except Exception as e:
+           print(e.args)
