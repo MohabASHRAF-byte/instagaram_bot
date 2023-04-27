@@ -1,12 +1,7 @@
 from Instagram.Instagram import Instagram
 from time import sleep
 
-# user = "bot124316@gmail.com"
-# password = "mohabashraf123456789___"
-# target = "_mohab_ashraf_0"
-user = "01201287564"
-password = "MohabAshraf@30121946"
-target = "reta.mounir"
+
 like = 3
 comment = False
 follow_account = 3
