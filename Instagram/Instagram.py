@@ -15,6 +15,7 @@ import time
 class Instagram(webdriver.Chrome):
     def __init__(self, driver_path=chrome_path):
         self.target = None
+        self.photoNumber = 0
         self.links = []
         self.driver_path = driver_path
         os.environ['PATH'] += self.driver_path
@@ -32,7 +33,14 @@ class Instagram(webdriver.Chrome):
         elapsed_minutes = int(elapsed_time_seconds // 60)
         elapsed_seconds = int(elapsed_time_seconds % 60)
         GREEN = '\033[32m'
+        print(f"{self.cnt } posts downloaded with {self.photoNumber }photos")
         print(GREEN + "Time elapsed: {} minutes {} seconds".format(elapsed_minutes, elapsed_seconds))
+
+    @staticmethod
+    def typing(container, string: str, speed: float = .05):
+        for char in string:
+            container.send_keys(char)
+            sleep(speed)
 
     def get_land_page(self):
         self.get(BASE_URL)
@@ -43,8 +51,10 @@ class Instagram(webdriver.Chrome):
         )
         password_input = self.find_element(By.CSS_SELECTOR, "input[aria-label='Password']")
         login_btn = self.find_element(By.CSS_SELECTOR, "button[type='submit']")
-        user_input.send_keys(user)
-        password_input.send_keys(pas)
+        self.typing(user_input, user)
+        self.typing(password_input, pas)
+        # user_input.send_keys(user)
+        # password_input.send_keys(pas)
         sleep(1)
         login_btn.click()
 
@@ -59,10 +69,12 @@ class Instagram(webdriver.Chrome):
             EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[type="text"]'))
         )
         # sleep(1)
-        facebook_user.send_keys(user)
+        # facebook_user.send_keys(user)
+        self.typing(facebook_user, user)
         # sleep(1)
         facebook_password = self.find_element(By.CSS_SELECTOR, 'input[type="password"]')
-        facebook_password.send_keys(pas)
+        self.typing(facebook_password, pas)
+        # facebook_password.send_keys(pas)
         # sleep(1)
         facebook_login_btn = self.find_element(By.ID, 'loginbutton')
         facebook_login_btn.click()
@@ -81,7 +93,9 @@ class Instagram(webdriver.Chrome):
             )
             save_data_btn.click()
         except Exception as e:
-            print("move to profile error")
+            print("move to profile error :", end=' ')
+            print(e.args)
+
             WebDriverWait(self, 180).until(
                 EC.text_to_be_present_in_element((By.CSS_SELECTOR, 'button[type="button"]'), "Save Info")
             )
@@ -97,7 +111,8 @@ class Instagram(webdriver.Chrome):
                 (By.CSS_SELECTOR, 'input[aria-label="Search input"]')
             )
         )
-        search_input.send_keys(target)
+        self.typing(search_input, target, 0.1)
+        # search_input.send_keys(target)
         sleep(3)
         choose_account = self.find_element(
             By.CSS_SELECTOR, f'a[href="/{target}/"]'
@@ -131,12 +146,14 @@ class Instagram(webdriver.Chrome):
                         i.click()
                         break
                 except Exception as e:
-                    print("follow error")
+                    print("follow error", ": ", end=' ')
+                    print(e.args)
                     pass
         # self.refresh()
         # sleep(5)
 
     def get_first_photo(self):
+        sleep(3)
         try:
             first_photo = WebDriverWait(self, 15).until(
                 EC.presence_of_element_located(
@@ -146,7 +163,8 @@ class Instagram(webdriver.Chrome):
 
             first_photo.click()
         except Exception as e:
-            print('account is private')
+            print('account is private', ": ", end=' ')
+            print(e.args)
 
     def add_comment(self, choice: bool):
         if choice:
@@ -164,10 +182,12 @@ class Instagram(webdriver.Chrome):
                     By.CSS_SELECTOR, 'textarea[placeholder="Add a comment…"]'
                 )
                 activated_comment_section.clear()
-                activated_comment_section.send_keys(rand.choice(comments))
+                self.typing(activated_comment_section, rand.choice(comments))
+                # activated_comment_section.send_keys(rand.choice(comments))
                 activated_comment_section.send_keys(Keys.ENTER)
             except Exception as e:
-                print("can't add comment")
+                print("can't add comment", ": ", end=' ')
+                print(e.args)
                 pass
 
     def like(self):
@@ -186,7 +206,8 @@ class Instagram(webdriver.Chrome):
                     btn.click()
                     break
             except Exception as e:
-                print("can't dislike")
+                print("can't dislike", ": ", end=' ')
+                print(e.args)
                 pass
 
     def handle_like(self, choice: int):
@@ -206,7 +227,8 @@ class Instagram(webdriver.Chrome):
             )
             nxt.click()
         except Exception as e:
-            print("can't find next photo")
+            print("can't find next photo", ": ", end=' ')
+            print(e.args)
             return False
         return True
 
@@ -216,7 +238,8 @@ class Instagram(webdriver.Chrome):
             close_btn.click()
             print("closed")
         except Exception as e:
-            print("can't close the image")
+            print("can't close the image", ": ", end=' ')
+            print(e.args)
 
     def do_work(self, like: int, comment: bool, prev: bool, download: bool):
         try:
@@ -224,12 +247,14 @@ class Instagram(webdriver.Chrome):
                 self.close_img()
                 return
             sleep(2)
-            if download:
-                download_post = DownloadPost(driver=self, cnt=self.cnt, target=self.target)
-                self.cnt = download_post.execute_process()
             self.add_comment(choice=comment)
             self.handle_like(choice=like)
+            if download:
+                download_post = DownloadPost(driver=self, cnt=self.cnt, target=self.target,
+                                             photoNumber=self.photoNumber)
+                self.cnt ,self.photoNumber= download_post.execute_process()
             sleep(2)
             return self.do_work(like=like, comment=comment, prev=self.next_post(), download=download)
         except Exception as e:
-            print("work is not done")
+            print("work is not done", ": ", end=' ')
+            print(e.args)

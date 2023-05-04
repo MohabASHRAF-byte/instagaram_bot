@@ -8,15 +8,15 @@ import os
 
 
 class DownloadPost:
-    def __init__(self, driver: webdriver, cnt: int, target):
+    def __init__(self, driver: webdriver, cnt: int, target, photoNumber):
         self.links = []
         self.target = target
         self.driver = driver
-        self.cnt = cnt
+        self.cnt = cnt + 1
         self.download()
+        self.idx = photoNumber
 
-    @staticmethod
-    def next_photo(element):
+    def next_photo(self, element):
         try:
             nxt = WebDriverWait(element, 0).until(
                 EC.presence_of_element_located(
@@ -26,18 +26,21 @@ class DownloadPost:
             nxt.click()
             return True
         except Exception as e:
-            print("next photo not found")
-            pass
+            print(f"{self.cnt - 1}'s post done", end='\n')
+            e.args = "-1"
             return False
 
     def download_img(self, link):
         try:
-            self.cnt += 1
-            file_name = os.path.join(os.getcwd(), self.target, f"image{self.cnt}.jpeg")
-            print("Image downloaded successfully as:", f"image{self.cnt}.jpeg")
+            self.idx += 1
+            indexed_name = f"post {self.cnt} - image {self.idx}"
+            file_name = os.path.join(os.getcwd(), self.target, f"{indexed_name}.jpeg")
+            print("Image downloaded successfully as:", f"{indexed_name}.jpeg")
             urllib.request.urlretrieve(link, file_name)
+
         except Exception as e:
-            print("couldn't download the photo")
+            print("couldn't download the photo : ", end=' ')
+            print(e.args)
             pass
 
     def download_single(self, is_multiple):
@@ -48,7 +51,8 @@ class DownloadPost:
             img_url = img.get_attribute('src')
             self.links.append(img_url)
         except Exception as e:
-            print("single download")
+            print("ERROR :: it might contains video ", ": ", end=' ')
+            e.args = " "
             pass
 
     def download_multiple(self, first_box):
@@ -67,7 +71,8 @@ class DownloadPost:
                 for img in find_list_elements:
                     self.links.append(img.get_attribute('src'))
         except Exception as e:
-            print("mul download")
+            print("mul download", ": ", end=' ')
+            print(e.args)
             pass
 
     def download(self):
@@ -86,4 +91,4 @@ class DownloadPost:
             os.mkdir(self.target)
         for link in set(self.links):
             self.download_img(link=link)
-        return self.cnt
+        return self.cnt, self.idx
