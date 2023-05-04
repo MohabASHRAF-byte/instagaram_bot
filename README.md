@@ -1,4 +1,3 @@
-Here's an example of a possible README file for your Instagram bot project:
 
 # Instagram Bot
 
